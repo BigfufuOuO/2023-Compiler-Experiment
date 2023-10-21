@@ -109,5 +109,8 @@ class CminusfBuilder : public ASTVisitor {
         // function that is being built
         Function *func = nullptr;
         // TODO: you should add more fields to store state
+        Value *val = nullptr;
+        Type *type = nullptr;
+        bool islvalue = false;
     } context;
 };
