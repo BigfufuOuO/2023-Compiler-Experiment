@@ -38,9 +38,9 @@ Value* CminusfBuilder::visit(ASTNum &node) {
     // TODO: This function is empty now.
     // Add some code here.
     if(node.type == TYPE_INT) //current value : int
-        this->context.val = CONST_INT(node.i_val);
+        context.val = CONST_INT(node.i_val);
     else
-        this->context.val = CONST_FP(node.f_val);
+        context.val = CONST_FP(node.f_val);
     return nullptr;
 }
 
@@ -64,8 +64,7 @@ Value* CminusfBuilder::visit(ASTVarDeclaration &node) {
         else
             type = ArrayType::get(FLOAT_T, node.num->i_val);
     }
-    // 全局变量判断
-    if(scope.in_global())//全局变量
+    if(scope.in_global())
         var = GlobalVariable::create(node.id, module.get(), type, false, ConstantZero::get(type, module.get()));
     else
         var = builder->create_alloca(type);
@@ -89,8 +88,8 @@ Value* CminusfBuilder::visit(ASTFunDeclaration &node) {
         // TODO: Please accomplish param_types.
         if(param->type == TYPE_INT)
         {
-            if(param->isarray)//数组
-                param_types.push_back(INT32PTR_T);//使用vector的方法push_back将指针插入vector容器末尾
+            if(param->isarray)//isarray
+                param_types.push_back(INT32PTR_T);//push back method
             else
                 param_types.push_back(INT32_T);
         }
@@ -115,8 +114,8 @@ Value* CminusfBuilder::visit(ASTFunDeclaration &node) {
         args.push_back(&arg);
     }
 
-    Type *type_temp;
-    Value *var;
+    Type *type_temp = nullptr;
+    Value *var = nullptr;
     for (int i = 0; i < node.params.size(); ++i) {
         // TODO: You need to deal with params and store them in the scope.
 
@@ -188,23 +187,23 @@ Value* CminusfBuilder::visit(ASTExpressionStmt &node) {
 Value* CminusfBuilder::visit(ASTSelectionStmt &node) {
     // TODO: This function is empty now.
     // Add some code here.
-    auto trueBB = BasicBlock::create(module.get(), "trueBB", this->context.func);
-    auto falseBB = BasicBlock::create(module.get(), "falseBB", this->context.func);
-    auto endBB = BasicBlock::create(module.get(), "endBB", this->context.func);
+    auto trueBB = BasicBlock::create(module.get(), "trueBB", context.func);
+    auto falseBB = BasicBlock::create(module.get(), "falseBB", context.func);
+    auto endBB = BasicBlock::create(module.get(), "endBB", context.func);
 
     node.expression->accept(*this);
-    if(this->context.val->get_type()->is_integer_type())
-        this->context.val = builder->create_icmp_ne(this->context.val, CONST_INT(0));
+    if(context.val->get_type()->is_integer_type())
+        context.val = builder->create_icmp_ne(context.val, CONST_INT(0));
     else
-        this->context.val = builder->create_fcmp_ne(this->context.val, CONST_INT(0));
+        context.val = builder->create_fcmp_ne(context.val, CONST_FP(0));
 
-    builder->create_cond_br(this->context.val, trueBB, falseBB);
+    builder->create_cond_br(context.val, trueBB, falseBB);
     builder->set_insert_point(trueBB);
     //tureBB
     scope.enter();
     node.if_statement->accept(*this);
     scope.exit();
-    if(builder->get_insert_block()->get_terminator() == nullptr)
+    if(!builder->get_insert_block()->is_terminated())
     {
         builder->create_br(endBB);
     }   
@@ -216,7 +215,7 @@ Value* CminusfBuilder::visit(ASTSelectionStmt &node) {
         scope.enter();
         node.else_statement->accept(*this);
         scope.exit();
-        if(builder->get_insert_block()->get_terminator() == nullptr)
+        if(!builder->get_insert_block()->is_terminated())
         {
             builder->create_br(endBB);
         }
@@ -232,21 +231,21 @@ Value* CminusfBuilder::visit(ASTSelectionStmt &node) {
 Value* CminusfBuilder::visit(ASTIterationStmt &node) {
     // TODO: This function is empty now.
     // Add some code here.
-    auto trueBB = BasicBlock::create(module.get(), "trueBB", this->context.func);
-    auto falseBB = BasicBlock::create(module.get(), "falseBB", this->context.func);
-    auto testBB = BasicBlock::create(module.get(), "testBB", this->context.func);
+    auto trueBB = BasicBlock::create(module.get(), "trueBB", context.func);
+    auto falseBB = BasicBlock::create(module.get(), "falseBB", context.func);
+    auto testBB = BasicBlock::create(module.get(), "testBB", context.func);
     builder->create_br(testBB);
     builder->set_insert_point(testBB);
     node.expression->accept(*this);
 
-    this->context.val = builder->create_icmp_ne(this->context.val,CONST_INT(0));
-    builder->create_cond_br(this->context.val, trueBB, falseBB);
+    context.val = builder->create_icmp_ne(context.val,CONST_INT(0));
+    builder->create_cond_br(context.val, trueBB, falseBB);
     builder->set_insert_point(trueBB);
     scope.enter();
     node.statement->accept(*this);
     scope.exit();
 
-    if (builder->get_insert_block()->get_terminator() == nullptr) {
+    if (!builder->get_insert_block()->is_terminated()) {
         builder->create_br(testBB);
     }
     builder->set_insert_point(falseBB);
@@ -261,15 +260,15 @@ Value* CminusfBuilder::visit(ASTReturnStmt &node) {
         // TODO: The given code is incomplete.
         // You need to solve other return cases (e.g. return an integer).
         node.expression->accept(*this);
-        //类型转换
-        if(this->context.func->get_function_type()->get_return_type() != this->context.val->get_type())//类型不同
+        //change type
+        if(context.func->get_function_type()->get_return_type() != context.val->get_type())
         {
-            if(this->context.val->get_type()->is_integer_type())
-                this->context.val = builder->create_sitofp(this->context.val, FLOAT_T);
+            if(context.val->get_type()->is_integer_type())
+                context.val = builder->create_sitofp(context.val, FLOAT_T);
             else
-                this->context.val = builder->create_fptosi(this->context.val, INT32_T);
+                context.val = builder->create_fptosi(context.val, INT32_T);
         }
-        builder->create_ret(this->context.val);
+        builder->create_ret(context.val);
     }
     return nullptr;
 }
@@ -277,56 +276,56 @@ Value* CminusfBuilder::visit(ASTReturnStmt &node) {
 Value* CminusfBuilder::visit(ASTVar &node) {
     // TODO: This function is empty now.
     // Add some code here.
-    this->context.val = scope.find(node.id);
+    context.val = scope.find(node.id);
     if(node.expression == nullptr)
     {
-        if(!this->context.islvalue) //不是左值，尝试获取该值
+        if(!context.islvalue) //get value if it's not left value
         {
-            if(this->context.val->get_type()->get_pointer_element_type()->is_array_type())
-                this->context.val = builder->create_gep(this->context.val, {CONST_INT(0),CONST_INT(0)});//数组地址
+            if(context.val->get_type()->get_pointer_element_type()->is_array_type())
+                context.val = builder->create_gep(context.val, {CONST_INT(0),CONST_INT(0)});
             else
-                this->context.val = builder->create_load(this->context.val);
+                context.val = builder->create_load(context.val);
         }
     }
     else
     {
-        Value *val_id = this->context.val;
+        Value *val_id = context.val;
         
-        bool islvalue_post = this->context.islvalue;
+        bool islvalue_post = context.islvalue;
         //expression
-        this->context.islvalue = false; 
+        context.islvalue = false; 
         node.expression->accept(*this);
-        this->context.islvalue = islvalue_post;
+        context.islvalue = islvalue_post;
 
-        Value *val_exp = this->context.val;
+        Value *val_exp = context.val;
         if(val_exp->get_type()->is_float_type())
             val_exp = builder->create_fptosi(val_exp, INT32_T);
 
-        auto trueBB = BasicBlock::create(module.get(), "trueBB", this->context.func);
-        auto falseBB = BasicBlock::create(module.get(), "falseBB", this->context.func);
-        auto endBB = BasicBlock::create(module.get(), "endBB", this->context.func);
-        //判断数组下标
+        auto trueBB = BasicBlock::create(module.get(), "trueBB", context.func);
+        auto falseBB = BasicBlock::create(module.get(), "falseBB", context.func);
+        auto endBB = BasicBlock::create(module.get(), "endBB", context.func);
+        
         Value *icmp = builder->create_icmp_ge(val_exp, CONST_INT(0));
         builder->create_cond_br(icmp, trueBB, falseBB);
 
-        builder->set_insert_point(trueBB);//未越界
+        builder->set_insert_point(trueBB);//Legal
         if(val_id->get_type()->get_pointer_element_type()->is_integer_type() || 
             val_id->get_type()->get_pointer_element_type()->is_float_type())
-            this->context.val = builder->create_gep(val_id,{val_exp});
+            context.val = builder->create_gep(val_id,{val_exp});
         else if(val_id->get_type()->get_pointer_element_type()->is_pointer_type())
         {
             val_id = builder->create_load(val_id);
-            this->context.val = builder->create_gep(val_id,{val_exp});
+            context.val = builder->create_gep(val_id,{val_exp});
         }
         else
-            this->context.val = builder->create_gep(val_id,{CONST_INT(0),val_exp});
+            context.val = builder->create_gep(val_id,{CONST_INT(0),val_exp});
             
-        //不返回左值
-        if(!this->context.islvalue)
-            this->context.val = builder->create_load(this->context.val);
+        //get value if it's not left value
+        if(!context.islvalue)
+            context.val = builder->create_load(context.val);
         builder->create_br(endBB);
 
-        //数组下表越界
+        //illegal
         builder->set_insert_point(falseBB);
         builder->create_call(scope.find("neg_idx_except"), {});
         builder->create_br(endBB);
@@ -338,23 +337,23 @@ Value* CminusfBuilder::visit(ASTVar &node) {
 Value* CminusfBuilder::visit(ASTAssignExpression &node) {
     // TODO: This function is empty now.
     // Add some code here.
-    this->context.islvalue = true;
+    context.islvalue = true;
     node.var->accept(*this);
-    this->context.islvalue = false;
+    context.islvalue = false;
 
-    Value *varL = this->context.val;
+    Value *varL = context.val;
     node.expression->accept(*this);
-    Value *varR = this->context.val;
+    Value *varR = context.val;
     
-    //类型转换
+    
     if(varL->get_type()->get_pointer_element_type() != varR->get_type())
     {
         if(varR->get_type()->is_integer_type())
-            this->context.val = builder->create_sitofp(varR, FLOAT_T);
+            context.val = builder->create_sitofp(varR, FLOAT_T);
         else
-            this->context.val = builder->create_fptosi(varR, INT32_T);
+            context.val = builder->create_fptosi(varR, INT32_T);
     }
-    builder->create_store(this->context.val, varL);
+    builder->create_store(context.val, varL);
     return nullptr;
 }
 
@@ -367,10 +366,10 @@ Value* CminusfBuilder::visit(ASTSimpleExpression &node) {
     {
         CminusType type = TYPE_INT;
         node.additive_expression_l->accept(*this);
-        Value *var1 = this->context.val;
+        Value *var1 = context.val;
         node.additive_expression_r->accept(*this);
-        Value *var2 = this->context.val;
-        //float转换
+        Value *var2 = context.val;
+        //
         if(var1->get_type()->is_float_type() || var2->get_type()->is_float_type())
         {
             type = TYPE_FLOAT;
@@ -384,50 +383,50 @@ Value* CminusfBuilder::visit(ASTSimpleExpression &node) {
         {
         case OP_LE: //<=
             if(type == TYPE_INT)    
-                this->context.val = builder->create_icmp_le(var1, var2);
+                context.val = builder->create_icmp_le(var1, var2);
             else
-                this->context.val = builder->create_fcmp_le(var1, var2);
+                context.val = builder->create_fcmp_le(var1, var2);
             break;
 
         case OP_LT: //<
             if(type == TYPE_INT)    
-                this->context.val = builder->create_icmp_lt(var1, var2);
+                context.val = builder->create_icmp_lt(var1, var2);
             else
-                this->context.val = builder->create_fcmp_lt(var1, var2);
+                context.val = builder->create_fcmp_lt(var1, var2);
             break;
 
         case OP_GT: //>
             if(type == TYPE_INT)    
-                this->context.val = builder->create_icmp_gt(var1, var2);
+                context.val = builder->create_icmp_gt(var1, var2);
             else
-                this->context.val = builder->create_fcmp_gt(var1, var2);
+                context.val = builder->create_fcmp_gt(var1, var2);
             break;
         
         case OP_GE: //>=
             if(type == TYPE_INT)    
-                this->context.val = builder->create_icmp_ge(var1, var2);
+                context.val = builder->create_icmp_ge(var1, var2);
             else
-                this->context.val = builder->create_fcmp_ge(var1, var2);
+                context.val = builder->create_fcmp_ge(var1, var2);
             break;
 
         case OP_EQ: //=
             if(type == TYPE_INT)    
-                this->context.val = builder->create_icmp_eq(var1, var2);
+                context.val = builder->create_icmp_eq(var1, var2);
             else
-                this->context.val = builder->create_fcmp_eq(var1, var2);
+                context.val = builder->create_fcmp_eq(var1, var2);
             break;
 
         case OP_NEQ: //!=
             if(type == TYPE_INT)    
-                this->context.val = builder->create_icmp_ne(var1, var2);
+                context.val = builder->create_icmp_ne(var1, var2);
             else
-                this->context.val = builder->create_fcmp_ne(var1, var2);
+                context.val = builder->create_fcmp_ne(var1, var2);
             break;
         
         default:
             break;
         }
-        this->context.val = builder->create_zext(this->context.val, INT32_T);
+        context.val = builder->create_zext(context.val, INT32_T);
     }
     return nullptr;
 }
@@ -441,10 +440,10 @@ Value* CminusfBuilder::visit(ASTAdditiveExpression &node) {
     {
         CminusType type = TYPE_INT;
         node.additive_expression->accept(*this);
-        Value *var1 = this->context.val;
+        Value *var1 = context.val;
         node.term->accept(*this);
-        Value *var2 = this->context.val;
-        //float转换
+        Value *var2 = context.val;
+        //
         if(var1->get_type()->is_float_type() || var2->get_type()->is_float_type())
         {
             type = TYPE_FLOAT;
@@ -458,16 +457,16 @@ Value* CminusfBuilder::visit(ASTAdditiveExpression &node) {
         {
         case OP_PLUS:
             if(type == TYPE_INT)
-                this->context.val = builder->create_iadd(var1, var2);
+                context.val = builder->create_iadd(var1, var2);
             else
-                this->context.val = builder->create_fadd(var1, var2);
+                context.val = builder->create_fadd(var1, var2);
             break;
 
         case OP_MINUS:
             if(type == TYPE_INT)
-                this->context.val = builder->create_isub(var1, var2);
+                context.val = builder->create_isub(var1, var2);
             else
-                this->context.val = builder->create_fsub(var1, var2);
+                context.val = builder->create_fsub(var1, var2);
             break;
         
         default:
@@ -487,9 +486,9 @@ Value* CminusfBuilder::visit(ASTTerm &node) {
     {
          CminusType type = TYPE_INT;
         node.term->accept(*this);
-        Value *var1 = this->context.val;
+        Value *var1 = context.val;
         node.factor->accept(*this);
-        Value *var2 = this->context.val;
+        Value *var2 = context.val;
 
         //float转换
         if(var1->get_type()->is_float_type() || var2->get_type()->is_float_type())
@@ -504,16 +503,16 @@ Value* CminusfBuilder::visit(ASTTerm &node) {
         {
         case OP_MUL:
             if(type == TYPE_INT)
-                this->context.val = builder->create_imul(var1, var2);
+                context.val = builder->create_imul(var1, var2);
             else
-                this->context.val = builder->create_fmul(var1, var2);
+                context.val = builder->create_fmul(var1, var2);
             break;
         
         case OP_DIV:
             if(type == TYPE_INT)
-                this->context.val = builder->create_isdiv(var1, var2);
+                context.val = builder->create_isdiv(var1, var2);
             else
-                this->context.val = builder->create_fdiv(var1, var2);
+                context.val = builder->create_fdiv(var1, var2);
             break;
         
         default:
@@ -532,16 +531,16 @@ Value* CminusfBuilder::visit(ASTCall &node) {
     for (auto &argu : node.args)
     {
         argu->accept(*this);
-        if(this->context.val->get_type() != *param)
+        if(context.val->get_type() != *param)
         {
-            if(this->context.val->get_type()->is_integer_type())
-                this->context.val = builder->create_sitofp(this->context.val, *param);
+            if(context.val->get_type()->is_integer_type())
+                context.val = builder->create_sitofp(context.val, *param);
             else
-                this->context.val = builder->create_fptosi(this->context.val, *param);
+                context.val = builder->create_fptosi(context.val, *param);
         }
         param++;
-        arguments.push_back(this->context.val);
+        arguments.push_back(context.val);
     }
-    this->context.val = builder->create_call(fun, arguments);
+    context.val = builder->create_call(fun, arguments);
     return nullptr;
 }

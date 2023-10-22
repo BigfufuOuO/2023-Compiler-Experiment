@@ -38,7 +38,7 @@ class Scope {
         }
 
         // Name not found: handled here?
-        assert(false && "Name not found in scope");
+        //assert(false && "Name not found in scope");
 
         return nullptr;
     }
@@ -110,7 +110,7 @@ class CminusfBuilder : public ASTVisitor {
         Function *func = nullptr;
         // TODO: you should add more fields to store state
         Value *val = nullptr;
-        Type *type = nullptr;
+        //Type *type = nullptr;
         bool islvalue = false;
     } context;
 };
