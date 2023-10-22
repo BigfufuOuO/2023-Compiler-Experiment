@@ -38,7 +38,7 @@ class Scope {
         }
 
         // Name not found: handled here?
-        //assert(false && "Name not found in scope");
+        assert(false && "Name not found in scope");
 
         return nullptr;
     }

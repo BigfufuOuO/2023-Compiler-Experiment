@@ -172,8 +172,9 @@ Value* CminusfBuilder::visit(ASTCompoundStmt &node) {
         if (builder->get_insert_block()->is_terminated())
             break;
     }
-    return nullptr;
     scope.exit();
+    return nullptr;
+    
 }
 
 Value* CminusfBuilder::visit(ASTExpressionStmt &node) {
@@ -187,9 +188,9 @@ Value* CminusfBuilder::visit(ASTExpressionStmt &node) {
 Value* CminusfBuilder::visit(ASTSelectionStmt &node) {
     // TODO: This function is empty now.
     // Add some code here.
-    auto trueBB = BasicBlock::create(module.get(), "trueBB", context.func);
-    auto falseBB = BasicBlock::create(module.get(), "falseBB", context.func);
-    auto endBB = BasicBlock::create(module.get(), "endBB", context.func);
+    auto trueBB = BasicBlock::create(module.get(), "", context.func);
+    auto falseBB = BasicBlock::create(module.get(), "", context.func);
+    auto endBB = BasicBlock::create(module.get(), "", context.func);
 
     node.expression->accept(*this);
     if(context.val->get_type()->is_integer_type())
@@ -231,9 +232,9 @@ Value* CminusfBuilder::visit(ASTSelectionStmt &node) {
 Value* CminusfBuilder::visit(ASTIterationStmt &node) {
     // TODO: This function is empty now.
     // Add some code here.
-    auto trueBB = BasicBlock::create(module.get(), "trueBB", context.func);
-    auto falseBB = BasicBlock::create(module.get(), "falseBB", context.func);
-    auto testBB = BasicBlock::create(module.get(), "testBB", context.func);
+    auto trueBB = BasicBlock::create(module.get(), "", context.func);
+    auto falseBB = BasicBlock::create(module.get(), "", context.func);
+    auto testBB = BasicBlock::create(module.get(), "", context.func);
     builder->create_br(testBB);
     builder->set_insert_point(testBB);
     node.expression->accept(*this);
@@ -301,9 +302,9 @@ Value* CminusfBuilder::visit(ASTVar &node) {
         if(val_exp->get_type()->is_float_type())
             val_exp = builder->create_fptosi(val_exp, INT32_T);
 
-        auto trueBB = BasicBlock::create(module.get(), "trueBB", context.func);
-        auto falseBB = BasicBlock::create(module.get(), "falseBB", context.func);
-        auto endBB = BasicBlock::create(module.get(), "endBB", context.func);
+        auto trueBB = BasicBlock::create(module.get(), "", context.func);
+        auto falseBB = BasicBlock::create(module.get(), "", context.func);
+        auto endBB = BasicBlock::create(module.get(), "", context.func);
         
         Value *icmp = builder->create_icmp_ge(val_exp, CONST_INT(0));
         builder->create_cond_br(icmp, trueBB, falseBB);
