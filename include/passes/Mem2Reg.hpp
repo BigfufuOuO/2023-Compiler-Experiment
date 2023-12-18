@@ -6,6 +6,7 @@
 
 #include <map>
 #include <memory>
+#include <unordered_map>
 
 class Mem2Reg : public Pass {
   private:
@@ -13,6 +14,12 @@ class Mem2Reg : public Pass {
     std::unique_ptr<Dominators> dominators_;
 
     // TODO 添加需要的变量
+    using BBSet = std::set<BasicBlock *>;
+    std::unordered_map<Value*, std::vector<BasicBlock*>> variables; 
+    std::unordered_map<Value*, std::vector<BasicBlock*>> Defs;
+    std::unordered_map<Value*, std::vector<Value*>> stack;
+    std::unordered_map<Instruction*, Value*> phi_belongs;
+
 
   public:
     Mem2Reg(Module *m) : Pass(m) {}

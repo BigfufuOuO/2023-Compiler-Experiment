@@ -1,0 +1,19 @@
+digraph "CFG for 'main' function" {
+	label="CFG for 'main' function";
+
+	Node0x158ce00 [shape=record,color="#3d50c3ff", style=filled, fillcolor="#b9d0f970",label="{label_entry:\l  br label %label7\l}"];
+	Node0x158ce00 -> Node0x158cfc0;
+	Node0x158d0a0 [shape=record,color="#b70d28ff", style=filled, fillcolor="#bb1b2c70",label="{label0:                                           \l  %op1 = sub i32 %op8, 1\l  %op2 = icmp slt i32 %op1, 5\l  %op3 = zext i1 %op2 to i32\l  %op4 = icmp ne i32 %op3, 0\l  br i1 %op4, label %label12, label %label14\l|{<s0>T|<s1>F}}"];
+	Node0x158d0a0:s0 -> Node0x158d9e0;
+	Node0x158d0a0:s1 -> Node0x158dab0;
+	Node0x158dc30 [shape=record,color="#3d50c3ff", style=filled, fillcolor="#b9d0f970",label="{label5:                                           \l  %op6 = add i32 %op9, %op10\l  ret i32 %op6\l}"];
+	Node0x158cfc0 [shape=record,color="#b70d28ff", style=filled, fillcolor="#b70d2870",label="{label7:                                           \l  %op8 = phi i32 [ 10, %label_entry ], [ %op1, %label16 ]\l  %op9 = phi i32 [ 0, %label_entry ], [ %op17, %label16 ]\l  %op10 = phi i32 [ 0, %label_entry ], [ %op18, %label16 ]\l  %op11 = icmp ne i32 %op8, 0\l  br i1 %op11, label %label0, label %label5\l|{<s0>T|<s1>F}}"];
+	Node0x158cfc0:s0 -> Node0x158d0a0;
+	Node0x158cfc0:s1 -> Node0x158dc30;
+	Node0x158d9e0 [shape=record,color="#b70d28ff", style=filled, fillcolor="#d6524470",label="{label12:                                          \l  %op13 = add i32 %op9, %op1\l  br label %label16\l}"];
+	Node0x158d9e0 -> Node0x158df50;
+	Node0x158dab0 [shape=record,color="#3d50c3ff", style=filled, fillcolor="#ec7f6370",label="{label14:                                          \l  %op15 = add i32 %op10, %op1\l  br label %label16\l}"];
+	Node0x158dab0 -> Node0x158df50;
+	Node0x158df50 [shape=record,color="#b70d28ff", style=filled, fillcolor="#bb1b2c70",label="{label16:                                          \l  %op17 = phi i32 [ %op13, %label12 ], [ %op9, %label14 ]\l  %op18 = phi i32 [ %op10, %label12 ], [ %op15, %label14 ]\l  br label %label7\l}"];
+	Node0x158df50 -> Node0x158cfc0;
+}

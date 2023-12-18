@@ -28,8 +28,13 @@ class Dominators : public Pass {
     void create_dom_tree_succ(Function *f);
 
     // TODO 补充需要的函数
+    bool bb_lt(BasicBlock* b1, BasicBlock* b2);
+    bool bb_eq(BasicBlock* b1, BasicBlock* b2);
 
     std::map<BasicBlock *, BasicBlock *> idom_{};  // 直接支配
     std::map<BasicBlock *, BBSet> dom_frontier_{}; // 支配边界集合
     std::map<BasicBlock *, BBSet> dom_tree_succ_blocks_{}; // 支配树中的后继节点
+
+    BasicBlock* first_processed_predecessor(BasicBlock *bb, BBSet &processed);
+    BasicBlock* intersect(BasicBlock *b1, BasicBlock *b2);
 };

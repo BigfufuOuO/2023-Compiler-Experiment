@@ -247,12 +247,85 @@ void CodeGen::gen_br() {
         auto *branchbb_true = static_cast<BasicBlock*>(branchInst->get_operand(1));
         auto *branchbb_false = static_cast<BasicBlock*>(branchInst->get_operand(2));
         //-----------FIX if wrong
+        //phi
+        for (auto &inst : branchbb_true->get_instructions())
+        {
+            if(inst.is_phi())
+            {
+                auto *phi_Inst = static_cast<PhiInst*>(&inst);
+                for (int label = 1; label < (int)phi_Inst->get_num_operand(); label += 2)
+                {
+                    if(phi_Inst->get_operand(label) == branchInst->get_parent())
+                    {
+                        if (phi_Inst->get_operand(label - 1)->get_type()->is_float_type())
+                        {
+                            load_to_freg(phi_Inst->get_operand(label - 1), FReg::ft(1));
+                            store_from_freg(phi_Inst, FReg::ft(1));
+                        }
+                        else if(phi_Inst->get_operand(label - 1)->get_type()->is_integer_type())
+                        {
+                            load_to_greg(phi_Inst->get_operand(label - 1), Reg::t(1));
+                            store_from_greg(phi_Inst, Reg::t(1));
+                        }        
+                    }
+                }
+            }
+        }
+
+        for (auto &inst : branchbb_false->get_instructions())
+        {
+            if(inst.is_phi())
+            {
+                auto *phi_Inst = static_cast<PhiInst*>(&inst);
+                for (int label = 1; label < (int)phi_Inst->get_num_operand(); label += 2)
+                {
+                    if(phi_Inst->get_operand(label) == branchInst->get_parent())
+                    {
+                        if (phi_Inst->get_operand(label - 1)->get_type()->is_float_type())
+                        {
+                            load_to_freg(phi_Inst->get_operand(label - 1), FReg::ft(1));
+                            store_from_freg(phi_Inst, FReg::ft(1));
+                        }
+                        else if(phi_Inst->get_operand(label - 1)->get_type()->is_integer_type())
+                        {
+                            load_to_greg(phi_Inst->get_operand(label - 1), Reg::t(1));
+                            store_from_greg(phi_Inst, Reg::t(1));
+                        }        
+                    }
+                }
+            }
+        }
+
         append_inst("bstrpick.w $t1, $t0, 0, 0");
         append_inst("bnez $t1, " + label_name(branchbb_true));
         append_inst("b " + label_name(branchbb_false));
         //throw not_implemented_error{__FUNCTION__};
+
     } else {
         auto *branchbb = static_cast<BasicBlock *>(branchInst->get_operand(0));
+        for (auto &inst : branchbb->get_instructions())
+        {
+            if(inst.is_phi())
+            {
+                auto *phi_Inst = static_cast<PhiInst*>(&inst);
+                for (int label = 1; label < (int)phi_Inst->get_num_operand(); label += 2)
+                {
+                    if(phi_Inst->get_operand(label) == branchInst->get_parent())
+                    {
+                        if (phi_Inst->get_operand(label - 1)->get_type()->is_float_type())
+                        {
+                            load_to_freg(phi_Inst->get_operand(label - 1), FReg::ft(1));
+                            store_from_freg(phi_Inst, FReg::ft(1));
+                        }
+                        else if(phi_Inst->get_operand(label - 1)->get_type()->is_integer_type())
+                        {
+                            load_to_greg(phi_Inst->get_operand(label - 1), Reg::t(1));
+                            store_from_greg(phi_Inst, Reg::t(1));
+                        }        
+                    }
+                }
+            }
+        }
         append_inst("b " + label_name(branchbb));
     }
 }
@@ -655,7 +728,7 @@ void CodeGen::run() {
                         gen_fcmp();
                         break;
                     case Instruction::phi:
-                        throw not_implemented_error{"need to handle phi!"};
+                        //throw not_implemented_error{"need to handle phi!"};
                         break;
                     case Instruction::call:
                         gen_call();
